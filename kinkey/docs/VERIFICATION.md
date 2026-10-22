@@ -21,6 +21,19 @@ No live login/decryption/quorum result is available. Tide's current E2EE playboo
 | V9 | Bootstrap admin attempts direct grant | Observe pending/committed | No master-realm access; no bypass claim | ? | Not run |
 | V10 | Single family admin self-grant | Pending | No live approval | ? | Not run |
 
+## Simulated TideCloak (Tide's Plan C), 2026-10-22
+
+Tide announced that its network could not license realms and asked teams to simulate TideCloak's sign-in, roles and access checks ("judged exactly the same"). KinKey runs in simulated mode when `tidecloak.json` has no `jwk.keys` (`lib/simtide.js`, `components/SimTide.jsx`). These results are about the simulation, **not** live Tide behaviour; V1 and V3–V10 above remain unrun against a real realm.
+
+Observed against `npm run dev` with direct API calls:
+- `GET /api/vault` with no token: 401. With a forged token: 401.
+- Lan (medical role only): simulated network refused `encrypt` and `decrypt` for `finance`; `POST /api/vault` for finance returned 403.
+- Lan filed a grant of `_tide_finance.selfdecrypt`: pending after Lan's approval and after Mom's; a second approval by Lan returned "You already decided on this request."; Minh's approval committed it (3 of 4).
+- Lan's pre-commit token was still refused after the commit; a refreshed token decrypted the finance ciphertext.
+- Mom's reset emptied the vault and restored the starting role mappings.
+
+Observed in a scripted headless-Chrome click-through: Mom loads demo contents; Lan sees Medical available and Finance restricted; Lan asks the family (badge "Pending approval 0/3", sidebar count 1); approvals by Lan, Mom and Minh commit the grant; Lan then reads Mom's letter. Attacker view lists seven `simtide1.` ciphertexts.
+
 ## Automated backend evidence
 
 `npm test`: 10 tests passed, 0 failed. Tests use real signature verification against ephemeral local keys and temporary files outside the repo. They do not simulate or establish family quorum.

@@ -1,6 +1,6 @@
-import { TideCloakProvider } from "@tidecloak/nextjs";
+import { TideCloakProvider } from "../components/tide";
 import adapter from "../tidecloak.json";
-import Header from "../components/Header";
+import Shell from "../components/Shell";
 import "./globals.css";
 
 export const metadata = {
@@ -16,13 +16,12 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lora:ital,wght@1,400;1,500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap"
         />
       </head>
       <body>
         <TideCloakProvider config={{ ...adapter }}>
-          <Header />
-          <main className="page">{children}</main>
+          <Shell>{children}</Shell>
         </TideCloakProvider>
       </body>
     </html>

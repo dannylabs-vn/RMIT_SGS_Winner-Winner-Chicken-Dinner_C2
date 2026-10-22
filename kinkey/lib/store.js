@@ -6,23 +6,25 @@ export const emptyStore = () => ({ items: [], requests: [], checks: [] });
 
 // Local-disk locking coordinates Next route bundles and concurrent processes.
 // Deploy on one host with persistent disk, not serverless or network storage.
-export function createStore(file) {
+const isVault = (data) => Array.isArray(data.items) &&
+  (data.requests === undefined || Array.isArray(data.requests)) &&
+  (data.checks === undefined || Array.isArray(data.checks));
+
+// Defaults describe the vault file; other JSON files pass their own empty/valid.
+export function createStore(file, { empty = emptyStore, valid = isVault } = {}) {
   const lock = `${file}.lock`;
   async function readStore() {
     let raw;
     try { raw = await fs.readFile(file, "utf8"); }
     catch (error) {
-      if (error.code === "ENOENT") return emptyStore();
+      if (error.code === "ENOENT") return empty();
       throw error;
     }
     const data = JSON.parse(raw);
-    if (!data || typeof data !== "object" || Array.isArray(data) ||
-        !Array.isArray(data.items) ||
-        (data.requests !== undefined && !Array.isArray(data.requests)) ||
-        (data.checks !== undefined && !Array.isArray(data.checks))) {
-      throw new Error("Invalid vault store. Restore a known-good backup.");
+    if (!data || typeof data !== "object" || Array.isArray(data) || !valid(data)) {
+      throw new Error("Invalid store file. Restore a known-good backup.");
     }
-    return { ...emptyStore(), ...data };
+    return { ...empty(), ...data };
   }
 
   async function updateStore(change) {

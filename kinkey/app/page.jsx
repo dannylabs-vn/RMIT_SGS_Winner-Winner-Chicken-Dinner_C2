@@ -1,173 +1,202 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useTideCloak, Authenticated, Unauthenticated } from "@tidecloak/nextjs";
-import Compartment from "../components/Compartment";
-import { useApi, asText } from "../components/useApi";
-import { COMPARTMENTS, DEMO_CONTENTS, encryptRole } from "../lib/compartments";
+import { useState } from "react";
+import Link from "next/link";
+import { useTideCloak, SIMULATED } from "../components/tide";
+import TwoCompartments, { SpotArt } from "../components/Illustration";
+import { Icon } from "../components/Icons";
+import { useSafe } from "../components/SafeProvider";
+import { PageHead, Progress, StatusBadge, pendingGrant, timeAgo, vaultStatus } from "../components/ui";
+import { COMPARTMENTS, ROLE_LABELS, decryptRole, findCompartment } from "../lib/compartments";
 
-export default function Home() {
-  const { isInitializing } = useTideCloak();
-  if (isInitializing) return <p className="quiet center">Connecting to TideCloak…</p>;
-  return (
-    <>
-      <Unauthenticated>
-        <Landing />
-      </Unauthenticated>
-      <Authenticated>
-        <Safe />
-      </Authenticated>
-    </>
-  );
+export default function Index() {
+  const safe = useSafe();
+  return safe ? <Home safe={safe} /> : <Landing />;
 }
+
+const PROMISES = [
+  {
+    tone: "medical",
+    icon: "medical",
+    title: "Medical opens fast",
+    body: "Every key-holder can read allergies and medication immediately. In an emergency nobody waits for a vote.",
+  },
+  {
+    tone: "finance",
+    icon: "users",
+    title: "Money needs the family",
+    body: "The key to bank, insurance and land papers is granted only after the family’s quorum approves it.",
+  },
+  {
+    tone: "blue",
+    icon: "shield",
+    title: "No single key-holder",
+    body: "Contents are encrypted in the browser. The KinKey server stores ciphertext and can’t open it, and no admin can hand out the key alone.",
+  },
+];
 
 function Landing() {
   const { login } = useTideCloak();
   return (
-    <section className="hero">
-      <h1>A family safe with no key-holder.</h1>
-      <p className="lede">
-        This prototype explores immediate medical access and family-approved grants for money and documents.
-        Cross-person decryption and the realm's quorum behavior still need live verification.
-      </p>
-      <button className="primary" onClick={login}>Sign in with Tide</button>
-      <ol className="how">
-        <li><strong>Set it up together.</strong> Mom stores what the family will need and chooses who holds a key.</li>
-        <li><strong>Medical opens fast.</strong> Every key-holder can read allergies and medication immediately.</li>
-        <li><strong>Money needs the family.</strong> The key to bank, insurance and land papers is granted only after the family’s quorum approves it.</li>
-      </ol>
-    </section>
+    <>
+      <section className="hero">
+        <div className="hero-copy">
+          <p className="eyebrow">A family safe on TideCloak</p>
+          <h1 className="t-display">A family safe with no key-holder.</h1>
+          <p className="t-body-l">
+            Medical details open for every key-holder at once. The key to money and documents is granted only after the
+            family’s quorum approves it.
+          </p>
+          <div className="actions">
+            <button className="btn btn-primary" onClick={login}>Sign in with Tide</button>
+            <Link className="btn btn-secondary" href="/attacker">See what a thief sees</Link>
+          </div>
+        </div>
+        <TwoCompartments className="hero-art" />
+      </section>
+
+      <section className="story" aria-labelledby="story-title">
+        <p className="eyebrow">The story</p>
+        <h2 id="story-title" className="t-hs">Minh works in Japan. Mom is in hospital. Lan is at her bedside.</h2>
+        <p className="t-body-l muted">
+          Lan reads Mom’s allergies straight away. The insurance papers stay sealed until the family agrees to give Lan the
+          key, and then Mom’s letter opens.
+        </p>
+      </section>
+
+      <ul className="promise-grid">
+        {PROMISES.map((p) => (
+          <li key={p.title} className={`promise promise-${p.tone}`}>
+            <span className="promise-icon"><Icon name={p.icon} className="icon icon-lg" /></span>
+            <h3 className="t-body-l" style={{ fontWeight: 600, color: "var(--ink)" }}>{p.title}</h3>
+            <p className="t-body">{p.body}</p>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
-function Safe() {
-  const { doDecrypt, doEncrypt, hasRealmRole, forceRefreshToken, refreshToken, getValueFromIdToken } = useTideCloak();
-  const api = useApi();
-  const [states, setStates] = useState(
-    Object.fromEntries(COMPARTMENTS.map((c) => [c.id, { status: "loading" }]))
-  );
-  const [requests, setRequests] = useState([]);
-  const [notice, setNotice] = useState("");
-  const isOwner = COMPARTMENTS.every((c) => hasRealmRole(encryptRole(c.tag)));
-  const name = getValueFromIdToken("preferred_username");
-
-  const loadRequests = useCallback(async () => {
-    try {
-      const { requests } = await api("/api/requests");
-      setRequests(requests);
-    } catch {
-      /* the board is optional for opening the safe */
-    }
-  }, [api]);
-
-  // Fetch ciphertext, then ask the Tide network to open each compartment.
-  // Whatever doDecrypt returns (plaintext or refusal) is what the UI shows.
-  const open = useCallback(
-    async ({ refresh = false } = {}) => {
-      if (refresh) {
-        // Pick up roles committed since sign-in (e.g. a newly approved grant).
-        try {
-          await (forceRefreshToken ? forceRefreshToken() : refreshToken());
-        } catch {
-          /* fall through and try with the current token */
-        }
-      }
-      setStates(Object.fromEntries(COMPARTMENTS.map((c) => [c.id, { status: "loading" }])));
-      let items = [];
-      try {
-        ({ items } = await api("/api/vault"));
-      } catch (err) {
-        setNotice(err.message);
-        return;
-      }
-      const next = {};
-      for (const c of COMPARTMENTS) {
-        const mine = items.filter((i) => i.compartment === c.id);
-        if (mine.length === 0) {
-          next[c.id] = { status: "empty" };
-          continue;
-        }
-        try {
-          const plain = await doDecrypt(mine.map((i) => ({ encrypted: i.ciphertext, tags: [c.tag] })));
-          const entries = plain.map((p, idx) => {
-            const parsed = JSON.parse(asText(p));
-            return { id: mine[idx].id, ...parsed };
-          });
-          next[c.id] = { status: "open", entries };
-        } catch (err) {
-          next[c.id] = {
-            status: "sealed",
-            count: mine.length,
-            peek: String(mine[0].ciphertext).slice(0, 96) + "…",
-            error: err?.message || String(err),
-          };
-        }
-      }
-      setStates(next);
-      loadRequests();
-    },
-    [api, doDecrypt, forceRefreshToken, refreshToken, loadRequests]
-  );
-
-  useEffect(() => {
-    open();
-  }, [open]);
-
-  async function loadDemo() {
-    setNotice("Encrypting demo contents in this browser…");
-    try {
-      for (const c of COMPARTMENTS) {
-        const entries = DEMO_CONTENTS[c.id];
-        const ciphertexts = await doEncrypt(entries.map((e) => ({ data: JSON.stringify(e), tags: [c.tag] })));
-        for (const ciphertext of ciphertexts) {
-          await api("/api/vault", { method: "POST", body: { compartment: c.id, ciphertext } });
-        }
-      }
-      setNotice("Demo contents saved. The server holds only ciphertext.");
-      open();
-    } catch (err) {
-      setNotice(err.message);
-    }
-  }
-
-  async function reset() {
-    if (!window.confirm("Empty the safe and the family board? This cannot be undone.")) return;
-    try {
-      await api("/api/reset", { method: "POST" });
-      setNotice("The safe is empty.");
-      open();
-    } catch (err) {
-      setNotice(err.message);
-    }
-  }
+function Home({ safe }) {
+  const { hasRealmRole } = useTideCloak();
+  const [confirmReset, setConfirmReset] = useState(false);
+  const waiting = safe.realm?.changeRequests?.filter((c) => c.status === "pending") || [];
 
   return (
-    <div className="safe">
-      <div className="safe-intro">
-        <h1>{name ? `The family safe, opened by ${name}` : "The family safe"}</h1>
-        <p className="lede">
-          Each compartment opens only if the Tide network agrees that this session holds its key role.
-          The app cannot fake that answer.
+    <>
+      <PageHead eyebrow="Your family safe" title="Your family, securely connected." art="family">
+        <p className="t-body-l">Important information, available to the people you trust.</p>
+        <p className="statement">
+          <Icon name="shield" />
+          Vault contents are encrypted in the browser before they are saved; the server stores only ciphertext.
         </p>
-        {isOwner && (
-          <div className="row owner-tools">
-            <button className="secondary" onClick={loadDemo}>Load demo contents</button>
-            <button className="link-button" onClick={reset}>Empty the safe</button>
-          </div>
-        )}
-        {notice && <p className="notice" role="status">{notice}</p>}
-      </div>
+      </PageHead>
 
-      {COMPARTMENTS.map((c) => (
-        <Compartment
-          key={c.id}
-          compartment={c}
-          state={states[c.id]}
-          requests={requests}
-          onAdded={() => open()}
-          onRetry={({ requestsOnly } = {}) => (requestsOnly ? loadRequests() : open({ refresh: true }))}
-        />
-      ))}
-    </div>
+      {safe.notice && <p className="notice" role="status"><Icon name="alert" />{safe.notice}</p>}
+
+      <section className="section" aria-labelledby="vaults-title">
+        <h2 id="vaults-title" className="eyebrow">Vaults</h2>
+        <ul className="vault-grid">
+          {COMPARTMENTS.map((c) => {
+            const state = safe.states[c.id];
+            const pending = pendingGrant(safe.realm, safe.name, decryptRole(c.tag));
+            const status = vaultStatus(state, hasRealmRole(decryptRole(c.tag)), pending);
+            const restricted = state?.status === "sealed";
+            const count = state?.status === "open" ? state.entries.length : state?.count;
+            return (
+              <li key={c.id} className={`vault-card vault-card-${c.id}`}>
+                <div className="vault-card-top">
+                  <span className="vault-icon"><Icon name={c.icon} className="icon icon-lg" /></span>
+                  <StatusBadge status={status} />
+                </div>
+                <SpotArt name={c.id === "finance" && state?.status === "open" ? "finance-open" : c.id} className="vault-card-art" />
+                <h3 className="t-hs">{c.title}</h3>
+                <p className="t-body">{c.description}</p>
+                <p className="t-body-s muted">
+                  {count ? `${count} ${count === 1 ? "item" : "items"} stored` : state?.status === "empty" ? "Nothing stored yet" : " "}
+                </p>
+                {pending && <Progress value={pending.approvals.length} max={pending.threshold} />}
+                <Link
+                  className={`btn ${restricted && !pending ? "btn-primary" : "btn-secondary"}`}
+                  href={restricted && c.id === "finance" && !pending ? `${c.href}#request` : c.href}
+                >
+                  {restricted && c.id === "finance" ? (pending ? "See your request" : "Request access") : c.action}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      {SIMULATED && (
+        <section className="section" aria-labelledby="approvals-title">
+          <h2 id="approvals-title" className="eyebrow">Family approvals</h2>
+          <div className="approval-strip">
+            <SpotArt name="approvals" className="approval-art" />
+            <div className="approval-copy">
+              {waiting.length === 0 ? (
+                <p className="t-body-l">No key requests are waiting for the family.</p>
+              ) : (
+                <>
+                  <p className="t-body-l">
+                    {waiting.length} key {waiting.length === 1 ? "request is" : "requests are"} waiting for the family.
+                  </p>
+                  <p className="t-body-s muted">
+                    Latest: {waiting[0].action === "grant" ? "give" : "take back"} {ROLE_LABELS[waiting[0].role] || waiting[0].role}{" "}
+                    {waiting[0].action === "grant" ? "to" : "from"} {waiting[0].member} · {waiting[0].approvals.length} of {safe.realm.threshold} approvals
+                  </p>
+                </>
+              )}
+              <Link className="btn btn-secondary" href="/approvals">Open family approvals</Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="section" aria-labelledby="activity-title">
+        <h2 id="activity-title" className="eyebrow">Recent family activity</h2>
+        {safe.requests.length === 0 ? (
+          <p className="t-body muted">No family activity yet.</p>
+        ) : (
+          <ul className="list">
+            {safe.requests.slice(0, 5).map((r) => (
+              <li key={r.id} className="activity-row">
+                <span className="activity-who">
+                  <span className="avatar" aria-hidden="true">{r.by.slice(0, 1).toUpperCase()}</span>
+                  <span className="t-body-s">
+                    <strong>{r.by}</strong> asked for {findCompartment(r.compartment)?.title || r.compartment}: “{r.reason}”
+                  </span>
+                </span>
+                <span className="t-body-s muted">{timeAgo(r.at)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="t-body-s muted" style={{ marginTop: 16 }}>
+          These are notes on the family board. Keys are granted only through family approvals.
+        </p>
+      </section>
+
+      {safe.isOwner && (
+        <section className="section owner" aria-labelledby="owner-title">
+          <h2 id="owner-title" className="eyebrow">Owner tools</h2>
+          <p className="t-body-s muted">
+            Load the demo contents (encrypted in this browser), or empty the safe{SIMULATED ? " and reset everyone’s keys" : ""} to start the demo again.
+          </p>
+          <div className="actions">
+            <button className="btn btn-secondary" onClick={safe.loadDemo}>Load demo contents</button>
+            {confirmReset ? (
+              <>
+                <span className="t-body-s">Empty the safe and the family board? This cannot be undone.</span>
+                <button className="btn btn-danger" onClick={() => { setConfirmReset(false); safe.reset(); }}>Yes, empty the safe</button>
+                <button className="text-link" onClick={() => setConfirmReset(false)}>Cancel</button>
+              </>
+            ) : (
+              <button className="btn btn-danger" onClick={() => setConfirmReset(true)}>Empty the safe</button>
+            )}
+          </div>
+        </section>
+      )}
+    </>
   );
 }
