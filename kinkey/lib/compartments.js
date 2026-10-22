@@ -9,13 +9,21 @@ export const COMPARTMENTS = [
     id: "medical",
     tag: "medical",
     title: "Medical",
+    href: "/medical",
+    icon: "medical",
+    description: "Health records, allergies and emergency information.",
+    action: "View medical records",
     rule: "Every key-holder can open this straight away.",
     why: "In an emergency, doctors need allergies and medications now, not after a family vote.",
   },
   {
     id: "finance",
     tag: "finance",
-    title: "Money and documents",
+    title: "Finance & Documents",
+    href: "/finance",
+    icon: "finance",
+    description: "Insurance, financial records and sensitive documents.",
+    action: "View documents",
     rule: "Opens only for someone whose key the family quorum approved.",
     why: "Bank accounts, insurance and land papers are what families fight over, so nobody gets them alone.",
   },
@@ -25,6 +33,13 @@ export const encryptRole = (tag) => `_tide_${tag}.selfencrypt`;
 export const decryptRole = (tag) => `_tide_${tag}.selfdecrypt`;
 
 export const findCompartment = (id) => COMPARTMENTS.find((c) => c.id === id);
+
+export const ROLE_LABELS = {
+  [decryptRole("finance")]: "Finance key (open)",
+  [encryptRole("finance")]: "Finance key (add)",
+  [decryptRole("medical")]: "Medical key (open)",
+  [encryptRole("medical")]: "Medical key (add)",
+};
 
 // Demo contents, encrypted in the owner's browser by "Load demo contents".
 // Labels are encrypted together with values, so the server never learns

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useTideCloak } from "@tidecloak/nextjs";
+import { useTideCloak } from "../../../components/tide";
 
 // Redirect target after Tide sign-in (the SDK default is /auth/redirect).
 export default function RedirectPage() {
@@ -21,5 +21,5 @@ export default function RedirectPage() {
     if (!isInitializing) router.replace("/");
   }, [authenticated, isInitializing, router]);
 
-  return <p className="quiet center">Finishing sign-in…</p>;
+  return <p className="loading-line" role="status">Finishing sign-in…</p>;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useTideCloak } from "@tidecloak/nextjs";
+import { useTideCloak } from "./tide";
 
 // Calls our API with the TideCloak access token. secureFetch upgrades the
 // request to DPoP automatically when the realm binds tokens to the device.

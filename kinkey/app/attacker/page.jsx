@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { findCompartment } from "../../lib/compartments";
+import { PageHead } from "../../components/ui";
 
 // Shows the database exactly as stored, as someone who copied it would see it.
 export default function AttackerView() {
@@ -16,34 +17,44 @@ export default function AttackerView() {
   }, []);
 
   return (
-    <div className="attacker">
-      <h1>What a thief sees</h1>
-      <p className="lede">
-        This is the whole database, copied as-is. It is what an attacker, a curious server admin, or the
-        app’s own developers would get. No key on this server can turn it back into text.
-      </p>
-      {error && <p className="error">{error}</p>}
+    <>
+      <PageHead eyebrow="Unauthorized observer’s view" title="What a thief sees" art="thief" tone="ink">
+        <p className="t-body-l">
+          These are the vault records returned by the database dump endpoint. The server holds no decryption key. The full
+          dump also contains readable family-board reasons and metadata.
+        </p>
+      </PageHead>
+      {error && <p className="notice" role="alert">{error}</p>}
       {store && (
         <>
-          <p className="tally">
-            {store.items.length} stored {store.items.length === 1 ? "secret" : "secrets"}, 0 readable.
+          <p className="t-hs" style={{ marginBottom: 16 }}>
+            {store.items.length} stored {store.items.length === 1 ? "record" : "records"}
           </p>
-          <ul className="dump">
-            {store.items.map((i) => (
-              <li key={i.id}>
-                <div className="dump-meta">
-                  {findCompartment(i.compartment)?.title || i.compartment}, added by {i.addedBy}
-                </div>
-                <code>{i.ciphertext}</code>
-              </li>
-            ))}
-          </ul>
-          {store.items.length === 0 && <p className="quiet">The safe is empty. Load the demo contents first.</p>}
-          <p className="quiet">
-            What still leaks: which compartment an item belongs to, who added it and when. Contents and labels do not.
+          <p className="t-body-s muted">Ciphertext is shown exactly as submitted.</p>
+          {store.items.length === 0 ? (
+            <div className="empty" style={{ marginTop: 32 }}>
+              <p className="t-body">The safe is empty. Load the demo contents first.</p>
+            </div>
+          ) : (
+            <ul className="list" style={{ marginTop: 32 }}>
+              {store.items.map((i) => (
+                <li key={i.id} className="record">
+                  <div className="record-meta">
+                    <span>{findCompartment(i.compartment)?.title || i.compartment}</span>
+                    <span>Added by {i.addedBy}</span>
+                    <span className="mono">{i.id}</span>
+                  </div>
+                  <code className="mono">{i.ciphertext}</code>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="t-body-s muted" style={{ marginTop: 32 }}>
+            Visible metadata includes compartment, author and time. The normal save flow encrypts contents and labels in the
+            browser; the server cannot prove that arbitrary submitted strings are encrypted.
           </p>
         </>
       )}
-    </div>
+    </>
   );
 }
