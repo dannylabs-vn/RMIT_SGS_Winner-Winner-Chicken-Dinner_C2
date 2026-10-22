@@ -1,23 +1,6 @@
-# KinKey
+# KinKey: technical notes
 
-**KinKey is a family safe where every key-holder can read medical details at once, but the key to money and documents is granted only after the family's quorum approves it.**
-
-### 1. Vision & originality
-Families keep bank, insurance and medical information in one person's head, or hand everything to one relative. KinKey splits the safe into compartments with different rules: medical opens immediately in an emergency; finance needs the family to agree.
-
-### 2. Trust constraint insight
-Today someone must hold the master key: a relative, a lawyer or the app's own admin. Whoever holds it can act alone. KinKey removes that holder: the server stores only ciphertext, and the finance key needs the family's quorum, not one person's say-so.
-
-### 3. Value & impact
-Minh works in Japan. Mom is hospitalised. Lan reads Mom's allergies straight away; the insurance papers stay sealed until three of the four family members approve Lan's key. Then Mom's letter opens. Revoking the key stops new openings after the next token refresh.
-
-### 4. Why TideCloak matters
-Without TideCloak this is ordinary login plus an admin who could flip a permission. With it, compartments are TideCloak encryption tags, keys are realm roles, and granting a key is a Quorum-Enforced Authorization change the family must approve. Tide's network was overloaded during the hackathon, so, following Tide's Plan C, sign-in, roles, approvals and encryption are **simulated** through the same app interface; see *Where TideCloak fits* in the app.
-
-### 5. Prototype & storytelling
-Working end to end: family sign-in, encrypted medical and finance vaults, a key request with live 3-of-4 approval progress, unlock after refresh, revocation, a family board, and "What a thief sees", the raw database showing only ciphertext. Ten automated backend tests cover authorization and storage.
-
-Demo video: [docs/kinkey-demo.mp4](docs/kinkey-demo.mp4).
+The project overview (judging README), demo walkthrough and setup are in the [repository README](../README.md). This page covers the approval model, trust model and verification status.
 
 ---
 
@@ -98,17 +81,7 @@ Backend API contracts, local checks and deployment limits: [`docs/BACKEND.md`](d
 
 Full instructions, verification tests and troubleshooting: [`docs/SETUP.md`](docs/SETUP.md).
 
-### Run the demo (simulated TideCloak, no Tide account needed)
-```bash
-npm install
-cp tidecloak.example.json tidecloak.json   # no licensed keys -> simulated mode
-npm run dev                                 # http://localhost:3000
-```
-1. **Sign in** → *Continue as Mom* → **Load demo contents**.
-2. Sign out → *Continue as Lan*: Medical is **Available**, Finance is **Restricted** → **Ask the family**.
-3. *Family approvals*: approve as Lan, then sign in as Mom and Minh and approve. It commits at 3 of 4.
-4. As Lan, **Try to open again** on Finance: Mom's letter opens. *What a thief sees* shows only ciphertext.
-5. To restart, sign in as Mom → **Empty the safe** (also resets everyone's keys).
+Install, run and the demo walkthrough: see the [repository README](../README.md#setup).
 
 Simulated mode keeps its realm and keys in `data/sim-*.json` (git-ignored). Every page shows a "Simulated TideCloak" notice.
 
