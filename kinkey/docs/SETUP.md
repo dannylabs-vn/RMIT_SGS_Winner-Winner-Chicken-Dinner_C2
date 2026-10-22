@@ -2,7 +2,7 @@
 
 ## 1. Prerequisites
 - Docker
-- Node.js 18.17 or later
+- Node.js 22.13 or later
 - A browser with two profiles (or one normal + one private window) to act as two family members
 
 ## 2. TideCloak setup
@@ -40,11 +40,13 @@ Tip: grant roles *before* adding the other admins, while approvals still need on
 npm install
 npm run dev        # http://localhost:3000
 ```
-Optional: `KINKEY_ATTACKER_VIEW=off npm run dev` disables the demo-only database dump.
+Optional: `KINKEY_ATTACKER_VIEW=off npm run dev` disables the demo-only database dump. Production disables it by default; use `KINKEY_ATTACKER_VIEW=on` only for a synthetic demo. In PowerShell set `$env:KINKEY_ATTACKER_VIEW="off"` before running `npm.cmd run dev`.
+
+The adapter must include its embedded `jwk.keys` verification keys. An example adapter is not a working configuration. Run `npm test` for local backend checks and `npm run build` before handoff. See [BACKEND.md](BACKEND.md) for API contracts, limits, DPoP and recovery.
 
 ## 5. Verification tests
 Run these in order and record results in [`VERIFICATION.md`](VERIFICATION.md). Stop at the first failure.
-- **V1** Sign in as `mom`. **V2** is already covered by local API tests.
+- **V1** Sign in as `mom`. **V2** has automated coverage with locally signed fixtures (`npm test`); repeat against the running app.
 - **V3** *Two-person check* page: `mom` encrypts under `medical`; `lan` decrypts. Expect `PASS`.
 - **V4** `mom` → *Load demo contents*. As `lan`: medical open, finance sealed.
 - **V5** File a grant of `_tide_finance.selfdecrypt` to `lan`. Approve one admin at a time. Record after each approval whether it committed.

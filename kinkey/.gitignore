@@ -1,6 +1,10 @@
 node_modules
 .next
 data/*.json
+data/*.tmp
+data/*.lock/
 tidecloak.json
 .env*
+.tide-pack/
+.tide-local/
 *.mov

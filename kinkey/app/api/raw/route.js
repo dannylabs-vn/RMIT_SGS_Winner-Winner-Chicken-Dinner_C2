@@ -1,15 +1,14 @@
-import { NextResponse } from "next/server";
-import { readStore } from "../../../lib/server";
+import { readStore } from "../../../lib/server.js";
+import { endpoint, json } from "../../../lib/http.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// DEMO ONLY: simulates an attacker (or a curious operator) who has copied the
-// whole database. It is intentionally unauthenticated so the attacker view
-// works without signing in. Disable with KINKEY_ATTACKER_VIEW=off.
-export async function GET() {
-  if (process.env.KINKEY_ATTACKER_VIEW === "off") {
-    return NextResponse.json({ error: "Attacker view is turned off." }, { status: 404 });
+// Deliberately public in the local demo. Production must explicitly opt in.
+export const GET = endpoint(async () => {
+  const setting = process.env.KINKEY_ATTACKER_VIEW;
+  if (setting === "off" || (process.env.NODE_ENV === "production" && setting !== "on")) {
+    return json({ error: "Attacker view is turned off." }, 404);
   }
-  return NextResponse.json(await readStore());
-}
+  return json(await readStore());
+});

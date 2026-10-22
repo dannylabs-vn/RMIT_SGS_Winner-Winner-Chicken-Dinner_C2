@@ -121,12 +121,14 @@ function Sealed({ compartment, state, onRetry, consoleUrl, requests }) {
             <textarea
               id="reason"
               rows={2}
+              maxLength={280}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Mom is in hospital and we need her insurance policy."
               required
             />
             <button type="submit">Ask the family</button>
+            <p className="quiet">This reason is stored as readable text. Keep it generic; leave out medical and financial details.</p>
             {error && <p className="error">{error}</p>}
           </form>
 
@@ -217,7 +219,7 @@ function AddEntry({ compartment, doEncrypt, api, onAdded }) {
         <button type="button" className="link-button" onClick={() => setOpen(false)}>Cancel</button>
       </div>
       {error && <p className="error">{error}</p>}
-      <p className="quiet">Encrypted in this browser before it is sent. The server only ever receives ciphertext.</p>
+      <p className="quiet">This entry is encrypted in your browser before it is sent. Board reasons are separate, readable notes.</p>
     </form>
   );
 }

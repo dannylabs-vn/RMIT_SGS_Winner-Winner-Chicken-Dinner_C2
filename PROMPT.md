@@ -48,7 +48,7 @@ Minh works in Japan. His mother sets up KinKey before he leaves. Mom is hospital
 
 - Next.js 15 (App Router, JavaScript), React 19
 - `@tidecloak/nextjs` 0.14.40 (official SDK)
-- File-based store `data/vault.json` (ciphertext only)
+- File-based store `data/vault.json` (vault/check ciphertext; readable family-board reasons and metadata)
 - Fonts: Be Vietnam Pro (UI), Lora italic (Mom's letter)
 
 ```
@@ -139,8 +139,8 @@ Use `tide_canon` (invariants, anti-patterns, troubleshooting) when unsure. If a 
 ## 6. Non-negotiable rules
 
 1. **Open/sealed state comes only from a real `doDecrypt` result.** Never show "Open", a lit lock, or decrypted content based on a frontend flag, role check or local state.
-2. **The server never receives plaintext.** All encryption happens in the browser. Do not log, cache or persist plaintext anywhere (no localStorage, no server logs).
-3. **Every write API verifies the token server-side** with `verifyTideCloakToken` and the matching role.
+2. **Vault/check contents must be encrypted in the browser before submission.** Do not log, cache or persist decrypted contents anywhere (no localStorage, no server logs). The existing family board is a readable shared note, so reasons must stay generic. The backend cannot prove an arbitrary submitted string is encrypted.
+3. **Every write API verifies the token server-side** with `verifyTideCloakToken`. Vault/check writes require the matching realm selfencrypt role; reset requires finance selfencrypt. Board notes require a verified token only and grant nothing.
 4. **Never add the encryption roles to `default-roles-<realm>`.** Grants are per user.
 5. **The family board grants nothing.** It is a shared note. Real approvals live in TideCloak QEA Approvals. Keep saying so in the UI.
 6. **Claims follow evidence.** README, UI copy and video narration may only state what is marked Verified/Tested in `docs/VERIFICATION.md` or documented by Tide. Unknowns are labelled "not yet tested".
@@ -218,3 +218,7 @@ For every change:
 2. List changed files.
 3. Give the exact steps to verify it, including the expected result and what failure looks like.
 4. Flag any new claim and say whether it is verified, documented or untested.
+
+## Backend handoff (2026-10-22)
+
+See `kinkey/docs/BACKEND.md` for current API contracts, storage/replay-cache limits and local verification. Run `npm test` for backend regression tests. The official verifier is imported directly from `@tidecloak/verify` (the helper re-exported by the Next SDK); `lib/auth.js` adds embedded-key, realm-role and DPoP checks. `lib/store.js` serializes updates and publishes files by atomic rename. Live V1?V10 results must still come from the team realm; local signing fixtures do not prove QEA behavior.

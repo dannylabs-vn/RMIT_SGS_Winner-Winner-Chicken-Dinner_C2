@@ -19,14 +19,14 @@ export default function AttackerView() {
     <div className="attacker">
       <h1>What a thief sees</h1>
       <p className="lede">
-        This is the whole database, copied as-is. It is what an attacker, a curious server admin, or the
-        app’s own developers would get. No key on this server can turn it back into text.
+        These are the vault records returned by the database dump endpoint. The server holds no decryption key.
+        The full dump also contains readable family-board reasons and metadata.
       </p>
       {error && <p className="error">{error}</p>}
       {store && (
         <>
           <p className="tally">
-            {store.items.length} stored {store.items.length === 1 ? "secret" : "secrets"}, 0 readable.
+            {store.items.length} stored {store.items.length === 1 ? "record" : "records"}; ciphertext shown as submitted.
           </p>
           <ul className="dump">
             {store.items.map((i) => (
@@ -40,7 +40,8 @@ export default function AttackerView() {
           </ul>
           {store.items.length === 0 && <p className="quiet">The safe is empty. Load the demo contents first.</p>}
           <p className="quiet">
-            What still leaks: which compartment an item belongs to, who added it and when. Contents and labels do not.
+            Visible metadata includes compartment, author and time. The normal save flow encrypts contents and labels
+            in the browser; the server cannot prove that arbitrary submitted strings are encrypted.
           </p>
         </>
       )}

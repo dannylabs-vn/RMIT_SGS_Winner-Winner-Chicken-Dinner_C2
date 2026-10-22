@@ -1,35 +1,26 @@
-import { NextResponse } from "next/server";
-import { readStore, writeStore, verify, newId, displayName } from "../../../lib/server";
-import { findCompartment, encryptRole } from "../../../lib/compartments";
+import { readStore, updateStore, verify, newId, displayName, rolesOf } from "../../../lib/server.js";
+import { encryptRole } from "../../../lib/compartments.js";
+import { endpoint, json, readJson, ciphertextBody } from "../../../lib/http.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Supports the cross-person check: person A encrypts, person B decrypts.
-export async function GET(req) {
-  const claims = await verify(req);
-  if (!claims) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+export const GET = endpoint(async (req) => {
+  if (!await verify(req)) return json({ error: "Sign in first." }, 401);
   const { checks } = await readStore();
-  return NextResponse.json({ checks: checks.slice(0, 5) });
-}
+  // Return all retained checks so one busy tag cannot hide the other tag.
+  return json({ checks });
+});
 
-export async function POST(req) {
-  const body = await req.json().catch(() => null);
-  const compartment = findCompartment(body?.compartment);
-  if (!compartment || typeof body?.ciphertext !== "string") {
-    return NextResponse.json({ error: "Send a compartment and ciphertext." }, { status: 400 });
-  }
-  const claims = await verify(req, [encryptRole(compartment.tag)]);
-  if (!claims) return NextResponse.json({ error: "You cannot encrypt for this tag." }, { status: 403 });
-  const store = await readStore();
-  store.checks.unshift({
-    id: newId(),
-    compartment: compartment.id,
-    ciphertext: body.ciphertext,
-    by: displayName(claims),
-    at: new Date().toISOString(),
+export const POST = endpoint(async (req) => {
+  const claims = await verify(req, [encryptRole("medical"), encryptRole("finance")]);
+  if (!claims) return json({ error: "You cannot encrypt for this tag." }, 403);
+  const body = ciphertextBody(await readJson(req));
+  if (!rolesOf(claims).includes(encryptRole(body.compartment))) return json({ error: "You cannot encrypt for this tag." }, 403);
+  await updateStore((store) => {
+    store.checks.unshift({ id: newId(), compartment: body.compartment, ciphertext: body.ciphertext,
+      by: displayName(claims), at: new Date().toISOString() });
+    store.checks = store.checks.slice(0, 20);
   });
-  store.checks = store.checks.slice(0, 20);
-  await writeStore(store);
-  return NextResponse.json({ ok: true }, { status: 201 });
-}
+  return json({ ok: true }, 201);
+});

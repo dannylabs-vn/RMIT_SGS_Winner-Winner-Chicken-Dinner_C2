@@ -27,8 +27,8 @@ function Landing() {
     <section className="hero">
       <h1>A family safe with no key-holder.</h1>
       <p className="lede">
-        Medical details are readable by every key-holder at once. The key to money and documents is granted
-        only after the family approves it, and no relative, app operator or database thief can grant it to themselves.
+        This prototype explores immediate medical access and family-approved grants for money and documents.
+        Cross-person decryption and the realm's quorum behavior still need live verification.
       </p>
       <button className="primary" onClick={login}>Sign in with Tide</button>
       <ol className="how">

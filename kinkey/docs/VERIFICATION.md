@@ -1,20 +1,44 @@
 # KinKey verification log
 
-Fill in **Actual** and **Evidence** only from what you observed. Leave a row "Not run" rather than guessing.
-TideCloak version: ______   Date: ______   Tester: ______
+Record only observed results. Local fixtures do not establish Tide Fabric or QEA behavior.
 
-| ID | Test | Expected | Actual | Evidence (screenshot / output) | Status |
+Backend verification date: 2026-10-22 (Asia/Saigon). Node v24.18.0; Next.js 15.5.28; @tidecloak/nextjs 0.14.40; @tidecloak/verify 0.14.33.
+Live TideCloak realm/version: unavailable. Tester for live checks: not assigned.
+
+No live login/decryption/quorum result is available. Tide's current E2EE playbook documents self-encryption as encryptor-only; V3 remains unrun, not passed.
+
+| ID | Test | Expected | Actual | Evidence | Status |
 |---|---|---|---|---|---|
-| V1 | `mom` signs in | Name shown in header | | | |
-| V2 | API without/forged token | 401 / 403 | 401 and 403 returned | Local curl run during development | Pass |
-| V3 | `lan` decrypts value `mom` encrypted (`medical`) | `PASS` on Two-person check | | | |
-| V4 | `lan` opens safe after demo load | Medical open, finance sealed with network error | | | |
-| V5 | Approvals needed to commit a grant (4 admins) | Record count at which it commits | Committed after ___ of 4 | | |
-| V6 | `lan` after committed grant | Finance opens, letter shown | | | |
-| V7a | Revocation, reload + retry | Finance sealed | | | |
-| V7b | Revocation, already-open tab | Note what remains visible | | | |
-| V8 | `npm run check:plaintext` | `PASS` | | | |
-| V9 | Bootstrap admin grants role directly | Record: committed or pending | | | |
-| V10 | Single admin self-grant | Pending | | | |
+| V1 | Mom signs in | Name shown | No live realm/adapter available | ? | Not run |
+| V2 | Missing/forged API token | 401 / 403 | GET vault 401; forged POST vault 403; missing-token reset 403 | Production HTTP smoke on port 3100; automated route tests | Pass locally |
+| V3 | Lan decrypts Mom's medical value | Cross-person PASS | No family sessions available | ? | Not run |
+| V4 | Lan opens loaded safe | Medical open, finance refused | No live encrypted demo data | ? | Not run |
+| V5 | Grant with four admins | Observe actual threshold | No observation; no threshold assumed | ? | Not run |
+| V6 | Lan after committed grant | Finance opens | No live grant | ? | Not run |
+| V7a | Revocation, refresh/reload | Finance refused | No live revocation | ? | Not run |
+| V7b | Revocation, already-open tab | Record retained contents | No live revocation | ? | Not run |
+| V8 | Scan actual encrypted demo store | PASS | No vault exists; scanner correctly returned FAIL rather than a false PASS | `npm run check:plaintext`: ?No vault yet. Load demo contents first.? | Live test not run |
+| V9 | Bootstrap admin attempts direct grant | Observe pending/committed | No master-realm access; no bypass claim | ? | Not run |
+| V10 | Single family admin self-grant | Pending | No live approval | ? | Not run |
 
-After filling this in, update the *Verification status* and *Trust model* tables in the README to match.
+## Automated backend evidence
+
+`npm test`: 10 tests passed, 0 failed. Tests use real signature verification against ephemeral local keys and temporary files outside the repo. They do not simulate or establish family quorum.
+
+- Forged signatures, expired/future/incomplete claims, wrong issuer/client and unsupported auth schemes rejected; missing embedded keys fail closed.
+- DPoP proof signature, method, URL, token hash, freshness and replay checked; bound-token Bearer replay rejected.
+- Protected endpoints enforce authentication and matching realm roles; same-named client roles do not authorize encrypted writes.
+- Malformed JSON, wrong content type, unknown fields, oversized ciphertext/bodies and invalid board reasons rejected.
+- Concurrent writes preserve 30 records, including a separate test using three independent Node processes.
+- Capacity limits return 409 without erasing existing entries; checks retain the latest 20.
+- Corrupt data returns 503 and is preserved, including on reset.
+- Production raw view requires explicit opt-in and honors `off`.
+- Plaintext scanner rejects incomplete data and JSON-escaped known demo fragments. Synthetic opaque fixture PASS is not V8 evidence.
+
+`npm audit`: 0 known vulnerabilities after the PostCSS 8.5.25 override.
+
+`npm run build`: passed using a temporary copy of the example adapter for compilation only. The fixture was removed afterward; it was never a working login configuration. A real adapter is required for deployment and must be followed by a rebuild.
+
+Production HTTP smoke: vault GET 401, forged vault POST 403, reset POST 403, raw GET 404; API responses carried `Cache-Control: no-store`. SDK DPoP relay returned 200 with CSP for the example realm/client and 403 for the wrong client. This checks route wiring, not live browser DPoP login.
+
+See [BACKEND.md](BACKEND.md) for exact commands, API contracts and deployment limitations.

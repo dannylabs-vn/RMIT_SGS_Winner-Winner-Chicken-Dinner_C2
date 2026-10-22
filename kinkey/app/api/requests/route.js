@@ -1,38 +1,30 @@
-import { NextResponse } from "next/server";
-import { readStore, writeStore, verify, newId, displayName } from "../../../lib/server";
-import { findCompartment } from "../../../lib/compartments";
+import { readStore, updateStore, verify, newId, displayName } from "../../../lib/server.js";
+import { endpoint, json, readJson, fields, ApiError } from "../../../lib/http.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// The family request board. It is a shared note so everyone sees who asked
-// and why. It does NOT grant anything: the real approval is the governed
-// role grant that a quorum signs in TideCloak (QEA Approvals).
-export async function GET(req) {
-  const claims = await verify(req);
-  if (!claims) return NextResponse.json({ error: "Sign in to see requests." }, { status: 401 });
+// Public-to-the-family notes, not approvals. Never call QEA or change roles here.
+export const GET = endpoint(async (req) => {
+  if (!await verify(req)) return json({ error: "Sign in to see requests." }, 401);
   const { requests } = await readStore();
-  return NextResponse.json({ requests });
-}
+  return json({ requests });
+});
 
-export async function POST(req) {
+export const POST = endpoint(async (req) => {
   const claims = await verify(req);
-  if (!claims) return NextResponse.json({ error: "Sign in to ask the family." }, { status: 401 });
-  const body = await req.json().catch(() => null);
-  const compartment = findCompartment(body?.compartment);
-  const reason = String(body?.reason || "").trim().slice(0, 280);
-  if (!compartment || !reason) {
-    return NextResponse.json({ error: "Say which compartment and why you need it." }, { status: 400 });
+  if (!claims) return json({ error: "Sign in to ask the family." }, 401);
+  const body = await readJson(req, 4096);
+  fields(body, ["compartment", "reason"]);
+  if (body.compartment !== "finance" || typeof body.reason !== "string" ||
+      !body.reason.trim() || body.reason.trim().length > 280) {
+    throw new ApiError(400, "Request finance access with a reason of 1 to 280 characters.");
   }
-  const store = await readStore();
-  const request = {
-    id: newId(),
-    compartment: compartment.id,
-    by: displayName(claims),
-    reason,
-    at: new Date().toISOString(),
-  };
-  store.requests.unshift(request);
-  await writeStore(store);
-  return NextResponse.json({ request }, { status: 201 });
-}
+  const request = { id: newId(), compartment: "finance", by: displayName(claims),
+    reason: body.reason.trim(), at: new Date().toISOString() };
+  await updateStore((store) => {
+    if (store.requests.length >= 100) throw new ApiError(409, "The prototype family board is full (100 requests).");
+    store.requests.unshift(request);
+  });
+  return json({ request }, 201);
+});
