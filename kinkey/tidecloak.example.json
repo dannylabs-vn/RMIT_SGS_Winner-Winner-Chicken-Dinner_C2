@@ -1,0 +1,9 @@
+{
+  "realm": "kinkey",
+  "auth-server-url": "http://localhost:8080",
+  "ssl-required": "external",
+  "resource": "kinkey-app",
+  "public-client": true,
+  "confidential-port": 0,
+  "_comment": "Placeholder only. Download the real tidecloak.json from tide-console > Apps > your app > Credentials and save it as ./tidecloak.json"
+}
