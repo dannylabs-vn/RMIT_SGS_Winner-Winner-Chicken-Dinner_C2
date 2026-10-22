@@ -92,6 +92,8 @@ Record actual results in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 - One realm per family in the prototype. A production path is one realm with a Forseti policy per safe (`ValidateApprovers`).
 
 ## Setup
+Where TideCloak fits, planned with Tide's MCP (Plan C): [`docs/TIDECLOAK-PLAN.md`](docs/TIDECLOAK-PLAN.md).
+
 Backend API contracts, local checks and deployment limits: [`docs/BACKEND.md`](docs/BACKEND.md).
 
 Full instructions, verification tests and troubleshooting: [`docs/SETUP.md`](docs/SETUP.md).

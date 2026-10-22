@@ -11,8 +11,8 @@ const FITS = [
   },
   {
     kinkey: "Medical and Finance keys",
-    tide: "Realm roles _tide_medical.* and _tide_finance.* gate Tide’s doEncrypt / doDecrypt.",
-    sim: "Same role names in the token. The simulated network refuses to decrypt without the role.",
+    tide: "Tide’s built-in RelationshipAttestation policy (recommended by Tide’s MCP): the network decrypts a compartment only for holders of its role, so the whole family can read what Mom encrypted.",
+    sim: "Role names in the token gate each compartment. The simulated network refuses to decrypt without the role.",
   },
   {
     kinkey: "Family approves the finance key",
@@ -45,7 +45,8 @@ export default function SecurityPage() {
             <p className="t-body">
               Tide’s network was under heavy load during the hackathon and could not license new realms, so this build runs in{" "}
               <strong>simulated TideCloak</strong> mode, as Tide’s Plan C asks. The app calls the same functions either way;
-              with a licensed <span className="mono">tidecloak.json</span> it switches to the official SDK.
+              with a licensed <span className="mono">tidecloak.json</span> it switches to the official SDK. This mapping was
+              planned with Tide’s MCP (see <span className="mono">docs/TIDECLOAK-PLAN.md</span>).
             </p>
           ) : (
             <p className="t-body">This build runs against a live TideCloak realm through the official SDK.</p>
@@ -92,7 +93,7 @@ export default function SecurityPage() {
           <h2 className="t-hs">Known limitations</h2>
           <ul className="t-body">
             <li>TideCloak is simulated in this build. Live Tide behaviour (approval threshold, revocation timing, whether a server administrator can bypass the family) has not been tested.</li>
-            <li>With plain Tide self-encryption only the encrypting user can decrypt. Sharing Mom’s medical notes with the family needs Tide’s policy-governed encryption; the simulation models that intended behaviour.</li>
+            <li>With plain Tide self-encryption only the encrypting user can decrypt. Sharing Mom’s notes with the family needs a RelationshipAttestation policy per compartment; the simulation models that intended behaviour, and the live switch is planned, not built.</li>
             <li>The family board is a readable shared note, not an approval.</li>
             <li>The server cannot prove that an arbitrary submitted string is encrypted; use the in-app flow.</li>
             <li>Not a will and not legal advice.</li>
