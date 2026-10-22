@@ -16,7 +16,6 @@ const APP_NAV = [
   { href: "/board", label: "Family Board", icon: "board" },
   { href: "/security", label: "Security & Privacy", icon: "shield", group: "Trust" },
   { href: "/attacker", label: "What a thief sees", icon: "eye" },
-  { href: "/check", label: "Two-person check", icon: "check" },
 ];
 
 // Plan C disclosure: shown on every page while TideCloak is simulated.
@@ -33,10 +32,6 @@ function SimNotice() {
   );
 }
 
-const SITE_NAV = [
-  { href: "/security", label: "Security & Privacy" },
-  { href: "/attacker", label: "What a thief sees" },
-];
 
 export default function Shell({ children }) {
   const { isInitializing } = useTideCloak();
@@ -62,20 +57,12 @@ export default function Shell({ children }) {
 }
 
 function SiteFrame({ children }) {
-  const pathname = usePathname();
   const { login, isInitializing } = useTideCloak();
   return (
     <>
       <header className="site-header">
         <div className="site-header-inner">
           <Brand />
-          <nav className="site-nav" aria-label="Main">
-            {SITE_NAV.map((l) => (
-              <Link key={l.href} href={l.href} aria-current={pathname === l.href ? "page" : undefined}>
-                {l.label}
-              </Link>
-            ))}
-          </nav>
           <button className="btn btn-primary" onClick={login} disabled={isInitializing}>
             Sign in
           </button>

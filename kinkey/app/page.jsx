@@ -47,10 +47,7 @@ function Landing() {
             Medical details open for every key-holder at once. The key to money and documents is granted only after the
             family’s quorum approves it.
           </p>
-          <div className="actions">
-            <button className="btn btn-primary" onClick={login}>Sign in with Tide</button>
-            <Link className="btn btn-secondary" href="/attacker">See what a thief sees</Link>
-          </div>
+          <button className="btn btn-primary" onClick={login}>Sign in with Tide</button>
         </div>
         <TwoCompartments className="hero-art" />
       </section>
